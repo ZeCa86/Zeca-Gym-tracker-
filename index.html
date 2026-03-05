@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Treino">
+<title>Tracker de Treino</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #c8f55a;
+    --accent2: #7b5cff;
+    --accent3: #ff9f43;
+    --accent4: #48dbfb;
+    --text: #f0f0f5;
+    --muted: #6b6b85;
+    --danger: #ff5c72;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding-bottom: 120px; }
+
+  .header { padding: 52px 20px 16px; background: linear-gradient(180deg, #13131a 0%, transparent 100%); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .header-row { display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .date-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); }
+
+  .tabs { display: flex; gap: 0; padding: 14px 20px 0; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex-shrink: 0; padding: 10px 10px; background: none; border: none; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; white-space: nowrap; letter-spacing: .3px; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .section { padding: 22px 20px; display: none; }
+  .section.active { display: block; }
+
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+  .form-title { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px; }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+  .field input, .field select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 15px; padding: 12px 14px; outline: none; transition: border-color .2s; appearance: none; -webkit-appearance: none; }
+  .field input:focus, .field select:focus { border-color: var(--accent2); }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b85' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s; letter-spacing: .5px; margin-bottom: 8px; display: block; text-align: center; }
+  .btn:last-child { margin-bottom: 0; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #0a0a0f; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-outline-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+
+  .toast { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--accent); color: #0a0a0f; padding: 12px 24px; border-radius: 100px; font-weight: 700; font-size: 14px; opacity: 0; transition: all .3s; z-index: 100; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; padding: 7px 14px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; transition: all .2s; }
+  .filter-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+  .day-group { margin-bottom: 26px; }
+  .day-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .day-label { font-size: 12px; font-weight: 700; color: var(--accent); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .day-line { flex: 1; height: 1px; background: var(--border); }
+  .day-count { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+  .entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .entry-left { flex: 1; min-width: 0; }
+  .entry-exercise { font-size: 15px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .entry-right { text-align: right; margin-left: 12px; flex-shrink: 0; }
+  .entry-weight { font-size: 20px; font-weight: 800; color: var(--accent); font-family: 'DM Mono', monospace; line-height: 1; }
+  .entry-unit { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .del-btn { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px 0 4px 10px; line-height: 1; flex-shrink: 0; }
+  .pr-badge { display: inline-block; background: var(--accent); color: #0a0a0f; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 100px; margin-left: 6px; vertical-align: middle; font-family: 'DM Mono', monospace; }
+
+  .empty-state { text-align: center; padding: 60px 20px; }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-text { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 14px; }
+  .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .chart-subtitle { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 18px; }
+  .chart-area { position: relative; height: 140px; }
+  svg.progress-chart { width: 100%; height: 100%; overflow: visible; }
+
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 10px; text-align: center; }
+  .stat-value { font-size: 20px; font-weight: 800; color: var(--accent); font-family: 'DM Mono', monospace; }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: 'DM Mono', monospace; }
+  .trend-up { color: var(--accent) !important; }
+  .trend-down { color: var(--danger) !important; }
+
+  .backup-info { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 16px; line-height: 1.8; }
+  #importFile { display: none; }
+
+  /* ===== NUTRITION STYLES ===== */
+  .nutri-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .nutri-tab { flex: 1; padding: 9px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s; text-align: center; }
+  .nutri-tab.active { background: var(--accent3); border-color: var(--accent3); color: #0a0a0f; }
+
+  .nutri-section { display: none; }
+  .nutri-section.active { display: block; }
+
+  .meal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+  .meal-header { padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+  .meal-icon { font-size: 22px; flex-shrink: 0; }
+  .meal-info { flex: 1; }
+  .meal-name { font-size: 14px; font-weight: 800; }
+  .meal-time { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .meal-chevron { color: var(--muted); font-size: 12px; transition: transform .25s; }
+  .meal-chevron.open { transform: rotate(180deg); }
+  .meal-body { padding: 0 16px 14px; display: none; }
+  .meal-body.open { display: block; }
+
+  .food-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .food-item:last-child { border-bottom: none; }
+  .food-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); flex-shrink: 0; margin-top: 5px; }
+  .food-dot.blue { background: var(--accent4); }
+  .food-dot.purple { background: var(--accent2); }
+  .food-dot.green { background: var(--accent); }
+  .food-text { font-size: 13px; line-height: 1.5; }
+  .food-note { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; display: block; margin-top: 2px; }
+
+  .tag { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 100px; margin-left: 6px; vertical-align: middle; font-family: 'DM Mono', monospace; letter-spacing: .5px; }
+  .tag-protein { background: rgba(200,245,90,.15); color: var(--accent); border: 1px solid rgba(200,245,90,.3); }
+  .tag-carb { background: rgba(255,159,67,.15); color: var(--accent3); border: 1px solid rgba(255,159,67,.3); }
+  .tag-fat { background: rgba(72,219,251,.15); color: var(--accent4); border: 1px solid rgba(72,219,251,.3); }
+
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .week-day-btn { padding: 8px 4px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; transition: all .2s; text-align: center; }
+  .week-day-btn.active { background: var(--accent3); border-color: var(--accent3); color: #0a0a0f; font-weight: 700; }
+
+  .macro-bar { display: flex; gap: 6px; margin-bottom: 14px; }
+  .macro-pill { flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; }
+  .macro-pill.p { background: rgba(200,245,90,.1); border: 1px solid rgba(200,245,90,.2); }
+  .macro-pill.c { background: rgba(255,159,67,.1); border: 1px solid rgba(255,159,67,.2); }
+  .macro-pill.g { background: rgba(72,219,251,.1); border: 1px solid rgba(72,219,251,.2); }
+  .macro-val { font-size: 16px; font-weight: 800; font-family: 'DM Mono', monospace; }
+  .macro-val.p { color: var(--accent); }
+  .macro-val.c { color: var(--accent3); }
+  .macro-val.g { color: var(--accent4); }
+  .macro-lbl { font-size: 9px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  /* ===== SUPPLEMENTS STYLES ===== */
+  .suppl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+  .suppl-header { padding: 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; user-select: none; }
+  .suppl-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .suppl-info { flex: 1; }
+  .suppl-name { font-size: 15px; font-weight: 800; }
+  .suppl-tagline { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .suppl-chevron { color: var(--muted); font-size: 12px; transition: transform .25s; }
+  .suppl-chevron.open { transform: rotate(180deg); }
+  .suppl-body { padding: 0 16px 16px; display: none; }
+  .suppl-body.open { display: block; }
+
+  .suppl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .suppl-stat { background: var(--surface2); border-radius: 12px; padding: 10px 12px; }
+  .suppl-stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+  .suppl-stat-value { font-size: 13px; font-weight: 700; }
+
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+  .tl-item { position: relative; margin-bottom: 12px; }
+  .tl-item:last-child { margin-bottom: 0; }
+  .tl-dot { position: absolute; left: -17px; top: 4px; width: 8px; height: 8px; border-radius: 50%; }
+  .tl-time { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 2px; }
+  .tl-desc { font-size: 13px; line-height: 1.4; }
+
+  .priority-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 100px; margin-bottom: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+  .priority-must { background: rgba(200,245,90,.15); color: var(--accent); border: 1px solid rgba(200,245,90,.3); }
+  .priority-rec { background: rgba(123,92,255,.15); color: var(--accent2); border: 1px solid rgba(123,92,255,.3); }
+  .priority-opt { background: rgba(107,107,133,.15); color: var(--muted); border: 1px solid rgba(107,107,133,.3); }
+
+  .warn-box { background: rgba(255,159,67,.08); border: 1px solid rgba(255,159,67,.25); border-radius: 12px; padding: 10px 12px; font-size: 12px; color: var(--accent3); font-family: 'DM Mono', monospace; line-height: 1.6; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="logo">GYM<span>.</span>LOG</div>
+    <div class="date-pill" id="todayDate"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('registo', this)">📝 Registo</button>
+  <button class="tab" onclick="showTab('historico', this)">📋 Histórico</button>
+  <button class="tab" onclick="showTab('progresso', this)">📈 Progresso</button>
+  <button class="tab" onclick="showTab('nutricao', this)">🥗 Nutrição</button>
+  <button class="tab" onclick="showTab('suplementos', this)">💊 Suplem.</button>
+  <button class="tab" onclick="showTab('dados', this)">💾 Dados</button>
+</div>
+
+<!-- ===== REGISTO ===== -->
+<div class="section active" id="tab-registo">
+  <div class="form-card">
+    <div class="form-title">Nova Série</div>
+    <div class="field"><label>Data</label><input type="date" id="inputDate"></div>
+    <div class="field"><label>Exercício / Máquina</label><input type="text" id="inputExercise" list="exerciseList" placeholder="ex: Supino, Leg Press…" autocomplete="off"><datalist id="exerciseList"></datalist></div>
+    <div class="row-3">
+      <div class="field"><label>Séries</label><input type="number" id="inputSets" value="3" min="1" max="20" inputmode="numeric"></div>
+      <div class="field"><label>Reps</label><input type="number" id="inputReps" value="10" min="1" max="100" inputmode="numeric"></div>
+      <div class="field"><label>Carga (kg)</label><input type="number" id="inputWeight" value="0" min="0" step="0.5" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label>Notas (opcional)</label><input type="text" id="inputNotes" placeholder="ex: fácil, aumentar na próx."></div>
+    <button class="btn btn-primary" onclick="addEntry()">+ Guardar</button>
+  </div>
+</div>
+
+<!-- ===== HISTÓRICO ===== -->
+<div class="section" id="tab-historico">
+  <div class="filter-row" id="filterRow">
+    <button class="filter-btn active" data-val="todos" onclick="filterHistory('todos', this)">Todos os dias</button>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<!-- ===== PROGRESSO ===== -->
+<div class="section" id="tab-progresso">
+  <div class="field" style="margin-bottom:18px">
+    <label>Ver progresso de</label>
+    <select id="progressExercise" onchange="renderProgress()"><option value="">— escolhe um exercício —</option></select>
+  </div>
+  <div class="stat-row" id="statsRow" style="display:none">
+    <div class="stat-card"><div class="stat-value" id="statMax">—</div><div class="stat-label">MÁX. kg</div></div>
+    <div class="stat-card"><div class="stat-value" id="statSessions">—</div><div class="stat-label">SESSÕES</div></div>
+    <div class="stat-card"><div class="stat-value" id="statTrend">—</div><div class="stat-label">EVOLUÇÃO</div></div>
+  </div>
+  <div class="chart-card" id="chartCard" style="display:none">
+    <div class="chart-title" id="chartTitle"></div>
+    <div class="chart-subtitle" id="chartSubtitle"></div>
+    <div class="chart-area"><svg class="progress-chart" id="progressSvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg></div>
+  </div>
+  <div class="chart-card" id="historyCardProgress" style="display:none">
+    <div class="form-title" style="margin-bottom:10px">Últimas sessões</div>
+    <div id="progressHistoryList"></div>
+  </div>
+  <div id="noProgressData" class="empty-state">
+    <div class="empty-icon">📊</div>
+    <div class="empty-text">Seleciona um exercício<br>para ver a evolução de carga.</div>
+  </div>
+</div>
+
+<!-- ===== NUTRIÇÃO ===== -->
+<div class="section" id="tab-nutricao">
+
+  <div class="nutri-tabs">
+    <button class="nutri-tab active" onclick="showNutriTab('semanal', this)">📅 Semanal</button>
+    <button class="nutri-tab" onclick="showNutriTab('pretreino', this)">⚡ Pré-treino</button>
+    <button class="nutri-tab" onclick="showNutriTab('postretino', this)">🔄 Pós-treino</button>
+  </div>
+
+  <!-- PLANO SEMANAL -->
+  <div class="nutri-section active" id="nutri-semanal">
+
+    <div class="week-grid" id="weekGrid">
+      <button class="week-day-btn active" data-day="0" onclick="selectDay(0,this)">Seg</button>
+      <button class="week-day-btn" data-day="1" onclick="selectDay(1,this)">Ter</button>
+      <button class="week-day-btn" data-day="2" onclick="selectDay(2,this)">Qua</button>
+      <button class="week-day-btn" data-day="3" onclick="selectDay(3,this)">Qui</button>
+      <button class="week-day-btn" data-day="4" onclick="selectDay(4,this)">Sex</button>
+      <button class="week-day-btn" data-day="5" onclick="selectDay(5,this)">Sáb</button>
+      <button class="week-day-btn" data-day="6" onclick="selectDay(6,this)">Dom</button>
+    </div>
+
+    <div id="dayPlanContainer"></div>
+  </div>
+
+  <!-- PRÉ-TREINO -->
+  <div class="nutri-section" id="nutri-pretreino">
+    <div class="form-card">
+      <div class="form-title">⏱️ Quando comer</div>
+      <div style="font-size:13px;line-height:1.8;color:var(--muted);font-family:'DM Mono',monospace">
+        <span style="color:var(--accent3);font-weight:700">1h30 – 2h antes</span> → Refeição completa<br>
+        <span style="color:var(--accent3);font-weight:700">30 – 45min antes</span> → Snack leve<br>
+        <span style="color:var(--accent3);font-weight:700">15min antes</span> → Fruta ou sumo natural
+      </div>
+    </div>
+
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">🍽️</div>
+        <div class="meal-info"><div class="meal-name">Refeição principal (1h30 antes)</div><div class="meal-time">Carboidratos + Proteína + pouca gordura</div></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body open">
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Arroz ou massa integral (150–200g cozido)<span class="tag tag-carb">CARB</span><span class="food-note">Energia de libertação lenta para o treino</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Frango grelhado ou atum (120–150g)<span class="tag tag-protein">PROT</span><span class="food-note">Amino ácidos disponíveis durante o esforço</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Legumes cozidos ou salada<span class="food-note">Vitaminas e minerais — sem gordura pesada</span></div></div>
+        <div class="food-item"><div class="food-dot blue"></div><div class="food-text">400–500ml de água<span class="food-note">Hidratação prévia essencial</span></div></div>
+      </div>
+    </div>
+
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">🍌</div>
+        <div class="meal-info"><div class="meal-name">Snack rápido (30–45min antes)</div><div class="meal-time">Carboidratos simples + Proteína leve</div></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body open">
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">1 banana madura<span class="tag tag-carb">CARB</span><span class="food-note">Potássio + glicose rápida = energia imediata</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">1 iogurte proteico grego (0% gordura)<span class="tag tag-protein">PROT</span><span class="food-note">Proteína rápida sem pesar no estômago</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">1 fatia de pão integral com mel<span class="tag tag-carb">CARB</span><span class="food-note">Alternativa simples e eficaz</span></div></div>
+      </div>
+    </div>
+
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">🚫</div>
+        <div class="meal-info"><div class="meal-name">Evitar antes do treino</div><div class="meal-time">Alimentos que prejudicam o desempenho</div></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body">
+        <div class="food-item"><div class="food-dot" style="background:var(--danger)"></div><div class="food-text">Gorduras em excesso (fritos, fast food)<span class="food-note">Retardam a digestão e causam cansaço</span></div></div>
+        <div class="food-item"><div class="food-dot" style="background:var(--danger)"></div><div class="food-text">Leguminosas e brócolos<span class="food-note">Causam gases e desconforto abdominal</span></div></div>
+        <div class="food-item"><div class="food-dot" style="background:var(--danger)"></div><div class="food-text">Álcool<span class="food-note">Desidrata e reduz força e coordenação</span></div></div>
+        <div class="food-item"><div class="food-dot" style="background:var(--danger)"></div><div class="food-text">Refeições muito grandes 30min antes<span class="food-note">Sangue vai para a digestão, não para os músculos</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PÓS-TREINO -->
+  <div class="nutri-section" id="nutri-postretino">
+    <div class="form-card">
+      <div class="form-title">⏱️ A janela anabólica</div>
+      <div style="font-size:13px;line-height:1.8;color:var(--muted);font-family:'DM Mono',monospace">
+        <span style="color:var(--accent);font-weight:700">0 – 30min após</span> → Proteína + Carboidrato rápido<br>
+        <span style="color:var(--accent);font-weight:700">1h – 2h após</span> → Refeição completa<br>
+        <span style="color:var(--muted)">Esta janela é quando os músculos absorvem mais nutrientes</span>
+      </div>
+    </div>
+
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">⚡</div>
+        <div class="meal-info"><div class="meal-name">Imediato (0–30min)</div><div class="meal-time">Recuperação rápida dos músculos</div></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body open">
+        <div class="food-item"><div class="food-dot green"></div><div class="food-text">Whey Protein (25–30g) com água ou leite meio-gordo<span class="tag tag-protein">PROT</span><span class="food-note">Proteína de absorção rápida — ideal nos primeiros 30min</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">1 banana ou 200ml sumo de laranja natural<span class="tag tag-carb">CARB</span><span class="food-note">Repõe glicogénio muscular rapidamente</span></div></div>
+        <div class="food-item"><div class="food-dot blue"></div><div class="food-text">500ml de água (pelo menos)<span class="food-note">Repõe fluidos perdidos na transpiração</span></div></div>
+      </div>
+    </div>
+
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">🍳</div>
+        <div class="meal-info"><div class="meal-name">Refeição completa (1h–2h depois)</div><div class="meal-time">Proteína + Carboidrato + Gordura saudável</div></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body open">
+        <div class="food-item"><div class="food-dot green"></div><div class="food-text">Ovos mexidos (3–4 ovos) ou frango/peixe (150g)<span class="tag tag-protein">PROT</span><span class="food-note">Proteína completa para reconstrução muscular</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Batata-doce ou arroz integral (150g cozido)<span class="tag tag-carb">CARB</span><span class="food-note">Carboidrato complexo para recuperação prolongada</span></div></div>
+        <div class="food-item"><div class="food-dot blue"></div><div class="food-text">Abacate (¼) ou azeite<span class="tag tag-fat">GORDURA</span><span class="food-note">Gordura saudável — hormonas e absorção de vitaminas</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Legumes variados<span class="food-note">Fibra, vitaminas e antioxidantes anti-inflamatórios</span></div></div>
+      </div>
+    </div>
+
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">🌙</div>
+        <div class="meal-info"><div class="meal-name">Se treinar à noite</div><div class="meal-time">Antes de dormir — recuperação noturna</div></div>
+        <div class="meal-chevron">▼</div>
+      </div>
+      <div class="meal-body">
+        <div class="food-item"><div class="food-dot green"></div><div class="food-text">Queijo cottage ou iogurte grego<span class="tag tag-protein">PROT</span><span class="food-note">Caseína — proteína de absorção lenta (6–8h)</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Frutos secos (amêndoas, nozes — 30g)<span class="tag tag-fat">GORDURA</span><span class="food-note">Gorduras saudáveis para recuperação noturna</span></div></div>
+        <div class="food-item"><div class="food-dot"></div><div class="food-text">Evitar carboidratos simples (açúcar, pão branco)<span class="food-note">A noite não é o momento ideal para carbs rápidos</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUPLEMENTOS ===== -->
+<div class="section" id="tab-suplementos">
+
+  <div class="form-card" style="margin-bottom:16px">
+    <div class="form-title">Guia para iniciantes</div>
+    <div style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.8">
+      Começa pelos essenciais. Não precisas de tudo ao mesmo tempo — <span style="color:var(--accent)">alimentação em primeiro lugar</span>, suplementos só complementam.
+    </div>
+  </div>
+
+  <!-- WHEY PROTEIN -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(200,245,90,.1)">🥛</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Whey Protein</div>
+        <div class="suppl-tagline">Proteína do soro do leite</div>
+      </div>
+      <span class="priority-badge priority-must">ESSENCIAL</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE</div><div class="suppl-stat-value">25–30g por toma</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">TOMAS/DIA</div><div class="suppl-stat-value">1–2x</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-time">Pós-treino (0–30 min)</div><div class="tl-desc">1 scoop com água ou leite — <strong>momento mais importante</strong></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--muted)"></div><div class="tl-time">Ao pequeno-almoço (dias sem treino)</div><div class="tl-desc">Para atingir a meta diária de proteína</div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--muted)"></div><div class="tl-time">Entre refeições (se necessário)</div><div class="tl-desc">Quando não é possível comer uma refeição completa</div></div>
+      </div>
+      <div class="warn-box">💡 Meta diária: 1.6–2g de proteína por kg de peso corporal. Ex: 70kg → 112–140g/dia.</div>
+    </div>
+  </div>
+
+  <!-- CREATINA -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(123,92,255,.1)">⚡</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Creatina Monohidratada</div>
+        <div class="suppl-tagline">Força, volume muscular e recuperação</div>
+      </div>
+      <span class="priority-badge priority-must">ESSENCIAL</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE</div><div class="suppl-stat-value">3–5g por dia</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">CONSISTÊNCIA</div><div class="suppl-stat-value">Todos os dias</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--accent2)"></div><div class="tl-time">Pós-treino (dias de treino)</div><div class="tl-desc">Com hidratos de carbono para melhor absorção</div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--muted)"></div><div class="tl-time">Qualquer hora (dias de descanso)</div><div class="tl-desc">O que importa é tomar todos os dias — saturação é acumulativa</div></div>
+      </div>
+      <div class="warn-box">💡 Não precisas de fase de carga. 3–5g/dia durante 4 semanas satura igualmente. Beber muita água é essencial.</div>
+    </div>
+  </div>
+
+  <!-- VITAMINA D3 + K2 -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(255,159,67,.1)">☀️</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Vitamina D3 + K2</div>
+        <div class="suppl-tagline">Ossos, imunidade e hormonas</div>
+      </div>
+      <span class="priority-badge priority-must">ESSENCIAL</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE D3</div><div class="suppl-stat-value">2000–4000 UI</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE K2</div><div class="suppl-stat-value">100–200 mcg</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--accent3)"></div><div class="tl-time">Ao pequeno-almoço</div><div class="tl-desc">Com refeição que contenha gordura — vitamina lipossolúvel</div></div>
+      </div>
+      <div class="warn-box">💡 Grande parte da população portuguesa tem défice de D3. A K2 garante que o cálcio vai para os ossos e não para as artérias.</div>
+    </div>
+  </div>
+
+  <!-- MAGNÉSIO -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(72,219,251,.1)">🌿</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Magnésio</div>
+        <div class="suppl-tagline">Recuperação, sono e contração muscular</div>
+      </div>
+      <span class="priority-badge priority-must">ESSENCIAL</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE</div><div class="suppl-stat-value">300–400mg</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">FORMA</div><div class="suppl-stat-value">Bisglicinato</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--accent4)"></div><div class="tl-time">À noite, 30–60min antes de dormir</div><div class="tl-desc">Melhora qualidade do sono e recuperação noturna</div></div>
+      </div>
+      <div class="warn-box">💡 Prefere Magnésio Bisglicinato — melhor absorção e não causa problemas intestinais como o óxido de magnésio.</div>
+    </div>
+  </div>
+
+  <!-- OMEGA 3 -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(72,219,251,.1)">🐟</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Ómega-3 (EPA + DHA)</div>
+        <div class="suppl-tagline">Anti-inflamatório e saúde cardiovascular</div>
+      </div>
+      <span class="priority-badge priority-rec">RECOMENDADO</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE</div><div class="suppl-stat-value">2–3g EPA+DHA</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">TOMAS</div><div class="suppl-stat-value">1–2x/dia</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--accent4)"></div><div class="tl-time">Durante as refeições (com gordura)</div><div class="tl-desc">Almoço ou jantar — reduz inflamação pós-treino e DOMS (dores musculares)</div></div>
+      </div>
+      <div class="warn-box">💡 Olha para a quantidade de EPA+DHA na embalagem, não apenas "óleo de peixe total". 1g de óleo ≠ 1g de ómega-3.</div>
+    </div>
+  </div>
+
+  <!-- MULTIVITAMÍNICO -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(200,245,90,.08)">💊</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Multivitamínico</div>
+        <div class="suppl-tagline">Seguro geral de micronutrientes</div>
+      </div>
+      <span class="priority-badge priority-rec">RECOMENDADO</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE</div><div class="suppl-stat-value">1 comprimido</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">FREQUÊNCIA</div><div class="suppl-stat-value">1x/dia</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-time">Ao pequeno-almoço</div><div class="tl-desc">Com comida — evita náuseas e melhora absorção</div></div>
+      </div>
+      <div class="warn-box">💡 Útil para cobrir possíveis lacunas na dieta. Não substitui uma alimentação variada. Prefere marcas sem doses excessivas.</div>
+    </div>
+  </div>
+
+  <!-- PRÉ-TREINO -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(255,92,114,.1)">🔥</div>
+      <div class="suppl-info">
+        <div class="suppl-name">Pré-treino / Cafeína</div>
+        <div class="suppl-tagline">Foco, energia e desempenho</div>
+      </div>
+      <span class="priority-badge priority-opt">OPCIONAL</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">CAFEÍNA</div><div class="suppl-stat-value">150–200mg</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">QUANDO</div><div class="suppl-stat-value">30min antes</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--danger)"></div><div class="tl-time">30min antes do treino</div><div class="tl-desc">Em jejum ou com refeição leve. Alternativa simples: 1 café expresso duplo.</div></div>
+      </div>
+      <div class="warn-box">⚠️ Não tomar depois das 15h (prejudica o sono). Evita habituar o corpo — 3–4x/semana no máximo. Começa com doses baixas.</div>
+    </div>
+  </div>
+
+  <!-- ZMA -->
+  <div class="suppl-card">
+    <div class="suppl-header" onclick="toggleSuppl(this)">
+      <div class="suppl-icon" style="background:rgba(107,107,133,.1)">🌙</div>
+      <div class="suppl-info">
+        <div class="suppl-name">ZMA (Zinco + Magnésio + B6)</div>
+        <div class="suppl-tagline">Recuperação noturna e testosterona</div>
+      </div>
+      <span class="priority-badge priority-opt">OPCIONAL</span>
+      <div class="suppl-chevron">▼</div>
+    </div>
+    <div class="suppl-body">
+      <div class="suppl-row">
+        <div class="suppl-stat"><div class="suppl-stat-label">DOSE</div><div class="suppl-stat-value">3 cápsulas</div></div>
+        <div class="suppl-stat"><div class="suppl-stat-label">QUANDO</div><div class="suppl-stat-value">Antes de dormir</div></div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--muted)"></div><div class="tl-time">30–60min antes de dormir, em jejum</div><div class="tl-desc">Evitar tomar com cálcio (bloqueia absorção do zinco)</div></div>
+      </div>
+      <div class="warn-box">💡 Se já tomares Magnésio Bisglicinato separado, o ZMA pode ser redundante. Não é obrigatório para iniciantes.</div>
+    </div>
+  </div>
+
+  <div class="form-card" style="margin-top:4px">
+    <div class="form-title" style="color:var(--danger)">⚠️ Importante</div>
+    <div style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.9">
+      Estes são suplementos gerais e não substituem aconselhamento médico.<br>
+      Antes de iniciar qualquer protocolo de suplementação, consulta o teu médico ou nutricionista, especialmente se tiveres alguma condição de saúde.
+    </div>
+  </div>
+</div>
+
+<!-- ===== DADOS ===== -->
+<div class="section" id="tab-dados">
+  <div class="form-card">
+    <div class="form-title">Cópia de Segurança</div>
+    <div class="backup-info">Os dados ficam no teu telemóvel.<br>Exporta regularmente para não perder nada<br>se limpares os dados do Safari.</div>
+    <button class="btn btn-primary" onclick="exportData()">⬇️ Exportar dados</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">⬆️ Importar dados</button>
+    <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+  </div>
+  <div class="form-card" id="statsCard">
+    <div class="form-title">Resumo</div>
+    <div id="globalStats" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);line-height:2.2"></div>
+  </div>
+  <div class="form-card">
+    <div class="form-title" style="color:var(--danger)">Zona de Perigo</div>
+    <div class="backup-info">Apaga todos os registos permanentemente.<br>Exporta primeiro para não perder nada.</div>
+    <button class="btn btn-outline-danger" onclick="clearAllData()">🗑️ Apagar todos os dados</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA =====
+let data = JSON.parse(localStorage.getItem('gymlog_v2') || '[]');
+function save() { localStorage.setItem('gymlog_v2', JSON.stringify(data)); }
+
+function getToday() { return new Date().toISOString().split('T')[0]; }
+function formatDate(str) {
+  const [y,m,d] = str.split('-');
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+}
+function formatDateShort(str) { const [y,m,d]=str.split('-'); return `${d}/${m}`; }
+
+document.getElementById('todayDate').textContent = formatDate(getToday());
+document.getElementById('inputDate').value = getToday();
+
+function getExercises() { return [...new Set(data.map(e=>e.exercise))].sort(); }
+function updateDatalist() { document.getElementById('exerciseList').innerHTML = getExercises().map(e=>`<option value="${e}">`).join(''); }
+function updateProgressSelect() {
+  const sel = document.getElementById('progressExercise');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— escolhe um exercício —</option>' + getExercises().map(e=>`<option value="${e}"${e===cur?' selected':''}>${e}</option>`).join('');
+}
+
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color || 'var(--accent)';
+  t.style.color = color ? '#fff' : '#0a0a0f';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2300);
+}
+
+// ===== REGISTO =====
+function addEntry() {
+  const date = document.getElementById('inputDate').value;
+  const exercise = document.getElementById('inputExercise').value.trim();
+  const sets = parseFloat(document.getElementById('inputSets').value)||0;
+  const reps = parseFloat(document.getElementById('inputReps').value)||0;
+  const weight = parseFloat(document.getElementById('inputWeight').value)||0;
+  const notes = document.getElementById('inputNotes').value.trim();
+  if (!date||!exercise) { showToast('⚠️ Preenche a data e o exercício','#ff5c72'); return; }
+  data.push({id:Date.now(),date,exercise,sets,reps,weight,notes});
+  save(); updateDatalist(); updateProgressSelect();
+  document.getElementById('inputExercise').value='';
+  document.getElementById('inputNotes').value='';
+  showToast('✅ Guardado!');
+}
+
+// ===== HISTÓRICO =====
+let activeFilter = 'todos';
+function filterHistory(val, btn) {
+  activeFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
+}
+function renderHistory() {
+  updateDayFilterButtons();
+  const container = document.getElementById('historyList');
+  let allDays = [...new Set(data.map(e=>e.date))].sort((a,b)=>b.localeCompare(a));
+  if (activeFilter !== 'todos') allDays = allDays.filter(d=>d===activeFilter);
+  if (!allDays.length) { container.innerHTML=`<div class="empty-state"><div class="empty-icon">💪</div><div class="empty-text">Sem registos ainda.<br>Começa a treinar!</div></div>`; return; }
+  const prMap={}, countMap={};
+  data.forEach(e=>{ if(!prMap[e.exercise]||e.weight>prMap[e.exercise]) prMap[e.exercise]=e.weight; countMap[e.exercise]=(countMap[e.exercise]||0)+1; });
+  let html='';
+  allDays.forEach(day=>{
+    const dayEntries=data.filter(e=>e.date===day).sort((a,b)=>a.id-b.id);
+    const exCount=[...new Set(dayEntries.map(e=>e.exercise))].length;
+    html+=`<div class="day-group"><div class="day-header"><div class="day-label">${formatDate(day)}</div><div class="day-line"></div><div class="day-count">${exCount} exercício${exCount!==1?'s':''}</div></div>`;
+    dayEntries.forEach(e=>{
+      const isPR=e.weight>0&&e.weight===prMap[e.exercise]&&countMap[e.exercise]>1;
+      html+=`<div class="entry-card"><div class="entry-left"><div class="entry-exercise">${e.exercise}${isPR?'<span class="pr-badge">PR</span>':''}</div><div class="entry-meta">${e.sets} séries × ${e.reps} reps${e.notes?' · '+e.notes:''}</div></div><div class="entry-right"><div class="entry-weight">${e.weight}</div><div class="entry-unit">kg / série</div></div><button class="del-btn" onclick="deleteEntry(${e.id})">×</button></div>`;
+    });
+    html+=`</div>`;
+  });
+  container.innerHTML=html;
+}
+function updateDayFilterButtons() {
+  const row=document.getElementById('filterRow');
+  const days=[...new Set(data.map(e=>e.date))].sort((a,b)=>b.localeCompare(a));
+  const allVals=['todos',...days];
+  const currentVals=[...row.querySelectorAll('.filter-btn')].map(b=>b.dataset.val);
+  if(JSON.stringify(currentVals)===JSON.stringify(allVals)) return;
+  row.innerHTML=allVals.map(v=>{const label=v==='todos'?'Todos os dias':formatDateShort(v);const active=v===activeFilter?' active':'';return`<button class="filter-btn${active}" data-val="${v}" onclick="filterHistory('${v}',this)">${label}</button>`;}).join('');
+}
+function deleteEntry(id) {
+  if(!confirm('Apagar este registo?')) return;
+  data=data.filter(e=>e.id!==id);
+  save(); updateProgressSelect(); renderHistory(); showToast('🗑️ Apagado');
+}
+
+// ===== PROGRESSO =====
+function renderProgress() {
+  const exercise=document.getElementById('progressExercise').value;
+  const noData=document.getElementById('noProgressData');
+  const statsRow=document.getElementById('statsRow');
+  const chartCard=document.getElementById('chartCard');
+  const histCard=document.getElementById('historyCardProgress');
+  if(!exercise){noData.style.display='';statsRow.style.display='none';chartCard.style.display='none';histCard.style.display='none';return;}
+  const entries=data.filter(e=>e.exercise===exercise).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!entries.length){noData.style.display='';return;}
+  noData.style.display='none';statsRow.style.display='';chartCard.style.display='';histCard.style.display='';
+  document.getElementById('statMax').textContent=Math.max(...entries.map(e=>e.weight))+'kg';
+  const days=[...new Set(entries.map(e=>e.date))].sort();
+  document.getElementById('statSessions').textContent=days.length;
+  if(days.length>=2){
+    const last=Math.max(...entries.filter(e=>e.date===days[days.length-1]).map(e=>e.weight));
+    const prev=Math.max(...entries.filter(e=>e.date===days[days.length-2]).map(e=>e.weight));
+    const diff=+(last-prev).toFixed(1);
+    const el=document.getElementById('statTrend');
+    if(diff>0){el.textContent='+'+diff+'kg';el.className='stat-value trend-up';}
+    else if(diff<0){el.textContent=diff+'kg';el.className='stat-value trend-down';}
+    else{el.textContent='=';el.className='stat-value';}
+  } else{document.getElementById('statTrend').textContent='—';document.getElementById('statTrend').className='stat-value';}
+  const dayMaxes=days.map(d=>({d,w:Math.max(...entries.filter(e=>e.date===d).map(e=>e.weight))}));
+  drawChart(dayMaxes);
+  document.getElementById('chartTitle').textContent=exercise;
+  document.getElementById('chartSubtitle').textContent=`carga máxima por sessão · ${days.length} sessão${days.length!==1?'ões':''}`;
+  document.getElementById('progressHistoryList').innerHTML=[...dayMaxes].reverse().slice(0,15).map((dm,i,arr)=>{
+    const prev=arr[i+1];const diff=prev?+(dm.w-prev.w).toFixed(1):null;let badge='';
+    if(diff!==null){if(diff>0)badge=`<span style="color:var(--accent);font-size:11px;font-family:'DM Mono',monospace">▲ +${diff}kg</span>`;else if(diff<0)badge=`<span style="color:var(--danger);font-size:11px;font-family:'DM Mono',monospace">▼ ${diff}kg</span>`;else badge=`<span style="color:var(--muted);font-size:11px;font-family:'DM Mono',monospace">= igual</span>`;}
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${formatDate(dm.d)}</span><div style="display:flex;align-items:center;gap:10px">${badge}<span style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace">${dm.w}<span style="font-size:11px;color:var(--muted)"> kg</span></span></div></div>`;
+  }).join('');
+}
+function drawChart(dayMaxes) {
+  const svg=document.getElementById('progressSvg');
+  if(!dayMaxes.length){svg.innerHTML='';return;}
+  const W=300,H=140,PAD=22;const vals=dayMaxes.map(d=>d.w);const minV=Math.min(...vals);const maxV=Math.max(...vals);const range=maxV-minV||1;
+  const pts=dayMaxes.map((d,i)=>({x:PAD+(i/Math.max(dayMaxes.length-1,1))*(W-PAD*2),y:PAD+(1-(d.w-minV)/range)*(H-PAD*2),w:d.w}));
+  let areaD=`M ${pts[0].x} ${H-PAD} L ${pts[0].x} ${pts[0].y}`;for(let i=1;i<pts.length;i++)areaD+=` L ${pts[i].x} ${pts[i].y}`;areaD+=` L ${pts[pts.length-1].x} ${H-PAD} Z`;
+  let lineD=`M ${pts[0].x} ${pts[0].y}`;for(let i=1;i<pts.length;i++)lineD+=` L ${pts[i].x} ${pts[i].y}`;
+  svg.innerHTML=`<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c8f55a" stop-opacity="0.25"/><stop offset="100%" stop-color="#c8f55a" stop-opacity="0.01"/></linearGradient></defs><path d="${areaD}" fill="url(#ag)"/><path d="${lineD}" fill="none" stroke="#c8f55a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((p,i)=>{const isMax=p.w===maxV;const showLabel=i===0||i===pts.length-1||isMax;return`<circle cx="${p.x}" cy="${p.y}" r="${isMax?5:3.5}" fill="${isMax?'#c8f55a':'#13131a'}" stroke="#c8f55a" stroke-width="2"/>${showLabel?`<text x="${p.x}" y="${p.y-10}" text-anchor="middle" fill="#c8f55a" font-size="9" font-family="monospace">${p.w}kg</text>`:''}`}).join('')}`;
+}
+
+// ===== DADOS =====
+function exportData() {
+  if(!data.length){showToast('⚠️ Sem dados para exportar','#ff5c72');return;}
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=`gymlog-backup-${getToday()}.json`;a.click();URL.revokeObjectURL(url);
+  showToast('⬇️ Ficheiro descarregado!');
+}
+function importData(event) {
+  const file=event.target.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{const imported=JSON.parse(e.target.result);if(!Array.isArray(imported))throw new Error();
+    const existingIds=new Set(data.map(x=>x.id));let added=0;
+    imported.forEach(entry=>{if(!existingIds.has(entry.id)){data.push(entry);added++;}});
+    save();updateDatalist();updateProgressSelect();renderGlobalStats();
+    showToast(`✅ ${added} registo${added!==1?'s':''} importado${added!==1?'s':''}!`);
+    }catch{showToast('❌ Ficheiro inválido','#ff5c72');}
+    event.target.value='';
+  };reader.readAsText(file);
+}
+function clearAllData() {
+  if(!data.length){showToast('⚠️ Já não há dados','#ff5c72');return;}
+  if(!confirm(`Apagar ${data.length} registos permanentemente?\n\nExporta primeiro para não perder nada.`)) return;
+  data=[];save();updateDatalist();updateProgressSelect();renderGlobalStats();showToast('🗑️ Dados apagados');
+}
+function renderGlobalStats() {
+  const el=document.getElementById('globalStats');
+  if(!data.length){el.innerHTML='Sem registos ainda.';return;}
+  const days=[...new Set(data.map(e=>e.date))];
+  const maxEntry=data.reduce((a,b)=>b.weight>a.weight?b:a);
+  el.innerHTML=`Total de séries: <strong style="color:var(--text)">${data.length}</strong><br>Dias de treino: <strong style="color:var(--text)">${days.length}</strong><br>Exercícios: <strong style="color:var(--text)">${getExercises().length}</strong><br>Maior carga: <strong style="color:var(--accent)">${maxEntry.weight}kg</strong> — ${maxEntry.exercise}`;
+}
+
+// ===== NUTRIÇÃO =====
+const weekPlans = [
+  // Segunda - Dia de treino
+  {label:'Segunda — Treino',meals:[
+    {icon:'🌅',name:'Pequeno-almoço',time:'7h00 – 8h00',items:[
+      {dot:'green',text:'Aveia (60g) com leite meio-gordo ou bebida vegetal',tag:'carb',note:'Base de energia lenta — essencial de manhã'},
+      {dot:'green',text:'2 ovos mexidos ou 1 iogurte grego proteico',tag:'protein',note:'Proteína no início do dia acelera o metabolismo'},
+      {dot:'',text:'1 banana ou fruta da época',tag:'carb',note:'Vitaminas e açúcar natural para acordar o corpo'},
+      {dot:'blue',text:'Café ou chá verde (sem açúcar)',note:'Cafeína natural — foco e energia'},
+      {dot:'',text:'Frutos secos (amêndoas, 15g)',tag:'fat',note:'Gordura saudável para saciedade duradoura'},
+    ]},
+    {icon:'🍎',name:'Lanche da manhã',time:'10h00 – 10h30',items:[
+      {dot:'',text:'1 maçã ou laranja',tag:'carb',note:''},
+      {dot:'green',text:'1 iogurte grego natural (0% ou 2%)',tag:'protein',note:''},
+    ]},
+    {icon:'🍽️',name:'Almoço (pré-treino)',time:'12h30 – 13h30',items:[
+      {dot:'green',text:'Frango grelhado ou peixe (150g)',tag:'protein',note:''},
+      {dot:'',text:'Arroz integral ou batata-doce (150g cozido)',tag:'carb',note:''},
+      {dot:'',text:'Legumes salteados ou salada',note:''},
+      {dot:'blue',text:'Água (500ml)',note:''},
+    ]},
+    {icon:'⚡',name:'Pré-treino',time:'30min antes do treino',items:[
+      {dot:'',text:'1 banana + café',tag:'carb',note:'Energia imediata'},
+    ]},
+    {icon:'💪',name:'Pós-treino imediato',time:'Dentro de 30min',items:[
+      {dot:'green',text:'Whey Protein (1 scoop, 25–30g)',tag:'protein',note:''},
+      {dot:'',text:'1 banana ou sumo de laranja natural',tag:'carb',note:''},
+    ]},
+    {icon:'🍳',name:'Jantar',time:'20h00 – 21h00',items:[
+      {dot:'green',text:'Salmão, atum ou frango (150g)',tag:'protein',note:''},
+      {dot:'',text:'Batata-doce assada ou quinoa (100g)',tag:'carb',note:''},
+      {dot:'blue',text:'Abacate (¼) ou azeite',tag:'fat',note:''},
+      {dot:'',text:'Salada variada',note:''},
+    ]},
+  ]},
+  // Terça - Descanso
+  {label:'Terça — Descanso',meals:[
+    {icon:'🌅',name:'Pequeno-almoço',time:'7h00 – 8h30',items:[
+      {dot:'green',text:'Tosta integral (2 fatias) com abacate e ovo',tag:'protein',note:'Pequeno-almoço completo e saciante'},
+      {dot:'',text:'1 copo de sumo de laranja natural',tag:'carb',note:''},
+      {dot:'blue',text:'Café ou chá',note:''},
+    ]},
+    {icon:'🍎',name:'Lanche da manhã',time:'10h30',items:[
+      {dot:'',text:'Fruta + 30g frutos secos',note:''},
+    ]},
+    {icon:'🍽️',name:'Almoço',time:'12h30 – 13h30',items:[
+      {dot:'green',text:'Peixe cozido ou grelhado (150g)',tag:'protein',note:''},
+      {dot:'',text:'Arroz integral ou massa integral (100g cozido)',tag:'carb',note:''},
+      {dot:'',text:'Legumes cozidos (brócolos, cenoura)',note:''},
+    ]},
+    {icon:'🫐',name:'Lanche da tarde',time:'16h00',items:[
+      {dot:'green',text:'Batido proteico ou queijo fresco',tag:'protein',note:''},
+      {dot:'',text:'Fruta fresca',note:''},
+    ]},
+    {icon:'🍳',name:'Jantar',time:'19h30 – 20h30',items:[
+      {dot:'green',text:'Ovos (3–4) ou leguminosas (feijão, grão — 150g)',tag:'protein',note:'Dias de descanso — reduz um pouco os carboidratos'},
+      {dot:'',text:'Salada grande com azeite e limão',note:''},
+      {dot:'',text:'Sopa de legumes (opcional)',note:''},
+    ]},
+  ]},
+  // Quarta - Treino
+  {label:'Quarta — Treino',meals:[
+    {icon:'🌅',name:'Pequeno-almoço',time:'7h00 – 8h00',items:[
+      {dot:'green',text:'Panquecas de aveia e banana (2 ovos + 50g aveia)',tag:'carb',note:'Receita rápida, nutritiva e deliciosa'},
+      {dot:'',text:'Mel ou fruta fresca por cima',tag:'carb',note:''},
+      {dot:'green',text:'Iogurte grego de acompanhamento',tag:'protein',note:''},
+      {dot:'blue',text:'Café sem açúcar',note:''},
+    ]},
+    {icon:'⚡',name:'Pré-treino',time:'30min antes',items:[
+      {dot:'',text:'Tosta integral com mel + café',tag:'carb',note:''},
+    ]},
+    {icon:'💪',name:'Pós-treino',time:'Dentro de 30min',items:[
+      {dot:'green',text:'Whey Protein (1 scoop)',tag:'protein',note:''},
+      {dot:'',text:'Banana + 200ml leite',tag:'carb',note:''},
+    ]},
+    {icon:'🍽️',name:'Almoço / Refeição pós-treino',time:'1h–2h após treino',items:[
+      {dot:'green',text:'Frango ou peru (150–180g)',tag:'protein',note:''},
+      {dot:'',text:'Massa integral (150g cozida)',tag:'carb',note:''},
+      {dot:'',text:'Molho de tomate caseiro + legumes',note:''},
+    ]},
+    {icon:'🍳',name:'Jantar',time:'20h00',items:[
+      {dot:'green',text:'Peixe grelhado (150g)',tag:'protein',note:''},
+      {dot:'',text:'Batata-doce ou legumes assados',note:''},
+      {dot:'blue',text:'Azeite e limão',tag:'fat',note:''},
+    ]},
+  ]},
+  // Quinta - Descanso
+  {label:'Quinta — Descanso',meals:[
+    {icon:'🌅',name:'Pequeno-almoço',time:'7h00 – 8h30',items:[
+      {dot:'green',text:'Granola caseira (50g) com iogurte grego',tag:'protein',note:''},
+      {dot:'',text:'Frutos vermelhos frescos ou congelados',tag:'carb',note:'Antioxidantes e vitaminas'},
+      {dot:'blue',text:'Café ou chá verde',note:''},
+    ]},
+    {icon:'🍽️',name:'Almoço',time:'12h30',items:[
+      {dot:'green',text:'Carne vermelha magra (1–2x semana, 150g)',tag:'protein',note:'Ferro e vitamina B12'},
+      {dot:'',text:'Arroz ou batata cozida',tag:'carb',note:''},
+      {dot:'',text:'Salada e azeite',note:''},
+    ]},
+    {icon:'🍳',name:'Jantar leve',time:'19h30',items:[
+      {dot:'green',text:'Sopa de legumes com leguminosas',tag:'protein',note:''},
+      {dot:'green',text:'Queijo cottage ou iogurte grego antes de dormir',tag:'protein',note:'Caseína para recuperação noturna'},
+    ]},
+  ]},
+  // Sexta - Treino
+  {label:'Sexta — Treino',meals:[
+    {icon:'🌅',name:'Pequeno-almoço',time:'7h00 – 8h00',items:[
+      {dot:'green',text:'2–3 ovos mexidos com espinafres',tag:'protein',note:'Proteína + ferro + ácido fólico'},
+      {dot:'',text:'2 fatias de pão integral',tag:'carb',note:''},
+      {dot:'',text:'1 fruta (kiwi, laranja ou maçã)',tag:'carb',note:'Vitamina C melhora absorção de ferro'},
+      {dot:'blue',text:'Café',note:''},
+    ]},
+    {icon:'⚡',name:'Pré-treino',time:'30–45min antes',items:[
+      {dot:'',text:'Banana + tosta com manteiga de amendoim',tag:'carb',note:''},
+    ]},
+    {icon:'💪',name:'Pós-treino',time:'Imediato',items:[
+      {dot:'green',text:'Whey Protein (1 scoop)',tag:'protein',note:''},
+      {dot:'',text:'Dátil ou fruta seca (2–3 unidades)',tag:'carb',note:''},
+    ]},
+    {icon:'🍽️',name:'Jantar',time:'20h00',items:[
+      {dot:'green',text:'Salmão grelhado (180g) — rico em Ómega-3',tag:'protein',note:'Anti-inflamatório natural'},
+      {dot:'',text:'Batata-doce assada com canela (150g)',tag:'carb',note:''},
+      {dot:'',text:'Brócolos e cenoura no vapor',note:''},
+    ]},
+  ]},
+  // Sábado - Descanso/Ativo
+  {label:'Sábado — Descanso ativo',meals:[
+    {icon:'🌅',name:'Pequeno-almoço reforçado',time:'8h30 – 9h30',items:[
+      {dot:'green',text:'Omelete de 3 ovos com legumes e queijo light',tag:'protein',note:'Fim de semana — mais tempo para cozinhar'},
+      {dot:'',text:'Torrada integral com abacate',tag:'fat',note:''},
+      {dot:'',text:'Salada de frutas com mel e granola',tag:'carb',note:''},
+      {dot:'blue',text:'Café ou batido natural',note:''},
+    ]},
+    {icon:'🍽️',name:'Almoço',time:'13h00',items:[
+      {dot:'green',text:'Refeição equilibrada — proteína + carboidrato + legumes',note:'Sem restrições — aproveita para variar'},
+      {dot:'',text:'Evita apenas frituras e excesso de álcool',note:''},
+    ]},
+    {icon:'🍳',name:'Jantar',time:'20h00',items:[
+      {dot:'green',text:'Peixe ou frango com legumes',tag:'protein',note:'Mantém o padrão mesmo no fim de semana'},
+    ]},
+  ]},
+  // Domingo - Recuperação
+  {label:'Domingo — Recuperação',meals:[
+    {icon:'🌅',name:'Pequeno-almoço',time:'9h00',items:[
+      {dot:'green',text:'Açaí bowl ou parfait de iogurte com granola e fruta',tag:'carb',note:'Prazer e nutrição ao mesmo tempo'},
+      {dot:'green',text:'2 ovos de qualquer forma',tag:'protein',note:''},
+      {dot:'blue',text:'Sumo natural ou chá',note:''},
+    ]},
+    {icon:'🍽️',name:'Almoço',time:'13h30',items:[
+      {dot:'green',text:'Refeição de família ou social — aproveita sem culpa',note:'Uma refeição livre não estraga a semana toda'},
+      {dot:'',text:'Foca no que comes durante a semana, não no domingo',note:''},
+    ]},
+    {icon:'🍳',name:'Jantar de preparação',time:'19h30',items:[
+      {dot:'green',text:'Proteína leve — peixe, ovos ou frango',tag:'protein',note:'Prepara o corpo para a semana que começa'},
+      {dot:'',text:'Arroz ou massa — carboidratos para amanhã',tag:'carb',note:''},
+      {dot:'green',text:'Queijo cottage antes de dormir',tag:'protein',note:'Caseína para recuperação noturna'},
+    ]},
+  ]},
+];
+
+let selectedDay = 0;
+function selectDay(day, btn) {
+  selectedDay = day;
+  document.querySelectorAll('.week-day-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDayPlan();
+}
+function renderDayPlan() {
+  const plan = weekPlans[selectedDay];
+  const container = document.getElementById('dayPlanContainer');
+  let html = '';
+  plan.meals.forEach((meal, mi) => {
+    html += `<div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-icon">${meal.icon}</div>
+        <div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-time">${meal.time}</div></div>
+        <div class="meal-chevron">${mi===0?'▲':'▼'}</div>
+      </div>
+      <div class="meal-body${mi===0?' open':''}">`;
+    meal.items.forEach(item => {
+      const tagHtml = item.tag ? `<span class="tag tag-${item.tag==='protein'?'protein':item.tag==='carb'?'carb':'fat'}">${item.tag==='protein'?'PROT':item.tag==='carb'?'CARB':'GORD'}</span>` : '';
+      const noteHtml = item.note ? `<span class="food-note">${item.note}</span>` : '';
+      const dotClass = item.dot==='green'?'green':item.dot==='blue'?'blue':item.dot==='purple'?'purple':'';
+      html += `<div class="food-item"><div class="food-dot ${dotClass}"></div><div class="food-text">${item.text}${tagHtml}${noteHtml}</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function toggleMeal(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.meal-chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+  chevron.textContent = body.classList.contains('open') ? '▲' : '▼';
+}
+
+function showNutriTab(id, btn) {
+  document.querySelectorAll('.nutri-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nutri-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('nutri-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== SUPLEMENTOS =====
+function toggleSuppl(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.suppl-chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+
+// ===== TABS =====
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='historico'){activeFilter='todos';renderHistory();}
+  if(id==='progresso'){updateProgressSelect();renderProgress();}
+  if(id==='dados') renderGlobalStats();
+}
+
+// Init
+updateDatalist();
+updateProgressSelect();
+renderGlobalStats();
+renderDayPlan();
+</script>
+</body>
+</html>
